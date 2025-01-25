@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Wordle Battle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="setup-screen" class="setup-screen">
+        <div class="setup-container">
+            <div class="team-setup">
+                <div class="team-config">
+                    <input type="text" id="team-a-name" placeholder="Enter Team 1 Name" maxlength="20">
+                    <input type="password" id="team-a-word" placeholder="Enter Team 1's Word" maxlength="5">
+                </div>
+                <div class="vs">VS</div>
+                <div class="team-config">
+                    <input type="text" id="team-b-name" placeholder="Enter Team 2 Name" maxlength="20">
+                    <input type="password" id="team-b-word" placeholder="Enter Team 2's Word" maxlength="5">
+                </div>
+            </div>
+            <button id="start-game" class="start-button">Start Game</button>
+        </div>
+    </div>
+
+    <main id="game-screen" class="game-screen hidden">
+        <div class="scoreboard game-scoreboard">
+            <div class="score-item">
+                <span id="team-a-score-label">Team 1</span>
+                <span id="team-a-score">0</span>
+            </div>
+            <div class="score-item">
+                <span id="team-b-score-label">Team 2</span>
+                <span id="team-b-score">0</span>
+            </div>
+        </div>
+        <div class="game-container">
+            <div class="team-section" id="team-a">
+                <h2 id="team-a-title">Team A</h2>
+                <div class="wordle-board">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <button class="activate-team" data-team="a">Submit Guess</button>
+                <div class="keyboard" id="keyboard-a"></div>
+            </div>
+
+            <div class="team-section" id="team-b">
+                <h2 id="team-b-title">Team B</h2>
+                <div class="wordle-board">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <button class="activate-team" data-team="b">Submit Guess</button>
+                <div class="keyboard" id="keyboard-b"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html> 
