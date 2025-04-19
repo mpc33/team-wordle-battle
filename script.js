@@ -1,435 +1,343 @@
-class WordleBattle {
-    constructor() {
-        this.WORD_LENGTH = 5;
-        this.ATTEMPTS = 6;
-        this.gameActive = false;
-        this.activeTeam = null;
-        this.WINNING_SCORE = 3;
-        this.scores = {
-            a: 0,
-            b: 0
-        };
-        this.teams = {
-            a: { 
-                name: '', 
-                word: '', 
-                currentAttempt: 0, 
-                currentGuess: '', 
-                board: [],
-                keyboardState: {} // Add this to track keyboard colors
-            },
-            b: { 
-                name: '', 
-                word: '', 
-                currentAttempt: 0, 
-                currentGuess: '', 
-                board: [],
-                keyboardState: {} // Add this to track keyboard colors
-            }
-        };
-        
-        this.initializeGame();
-    }
+// Game State
+const gameState = {
+    team1Name: '',
+    team2Name: '',
+    team1Word: '',
+    team2Word: '',
+    team1Guesses: 6,
+    team2Guesses: 6,
+    team1Grid: [],
+    team2Grid: [],
+    validWords: []
+};
 
-    initializeGame() {
-        // Create boards
-        this.createBoard('team-a');
-        this.createBoard('team-b');
-        
-        // Create keyboards
-        this.createKeyboard('keyboard-a', 'a');
-        this.createKeyboard('keyboard-b', 'b');
-        
-        // Add event listeners
-        document.getElementById('start-game').addEventListener('click', () => this.startGame());
-        
-        // Add keyboard event listeners
-        document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+// DOM Elements
+const screens = {
+    welcome: document.getElementById('welcome-screen'),
+    secretWords: document.getElementById('secret-words-screen'),
+    game: document.getElementById('game-screen'),
+    endGame: document.getElementById('end-game-screen')
+};
 
-        // Add team activation buttons listeners
-        document.querySelectorAll('.activate-team').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const team = e.target.dataset.team;
-                this.activateTeam(team);
-            });
-        });
-    }
+const forms = {
+    teamNames: document.getElementById('team-names-form'),
+    secretWords: document.getElementById('secret-words-form')
+};
 
-    activateTeam(team) {
-        if (!this.gameActive) return;
+const gameElements = {
+    team1Title: document.getElementById('team1-title'),
+    team2Title: document.getElementById('team2-title'),
+    currentTurn: document.getElementById('current-turn'),
+    team1Guesses: document.getElementById('team1-guesses'),
+    team2Guesses: document.getElementById('team2-guesses'),
+    team1Grid: document.getElementById('team1-grid'),
+    team2Grid: document.getElementById('team2-grid'),
+    team1Guess: document.getElementById('team1-guess'),
+    team2Guess: document.getElementById('team2-guess'),
+    team1Submit: document.getElementById('team1-submit'),
+    team2Submit: document.getElementById('team2-submit'),
+    endGameMessage: document.getElementById('end-game-message'),
+    secretWordsReveal: document.getElementById('secret-words-reveal'),
+    playAgain: document.getElementById('play-again')
+};
 
-        // Deactivate all teams first
-        document.querySelectorAll('.keyboard').forEach(kb => kb.classList.remove('active'));
-        document.querySelectorAll('.activate-team').forEach(btn => btn.classList.remove('active'));
-
-        // Activate selected team
-        document.getElementById(`keyboard-${team}`).classList.add('active');
-        document.querySelector(`[data-team="${team}"]`).classList.add('active');
-        
-        this.activeTeam = team;
-    }
-
-    handleKeyPress(e) {
-        if (!this.gameActive || !this.activeTeam) return;
-
-        if (e.key === 'Backspace') {
-            this.deleteLetter(this.activeTeam);
-        } else if (e.key === 'Enter') {
-            this.submitGuess(this.activeTeam);
-        } else if (/^[A-Za-z]$/.test(e.key)) {
-            this.addLetter(e.key.toUpperCase(), this.activeTeam);
-        }
-    }
-
-    handleKeyClick(key, team) {
-        if (!this.gameActive || team !== this.activeTeam) return;
-
-        if (key === '⌫') {
-            this.deleteLetter(team);
-        } else if (key === 'Enter') {
-            this.submitGuess(team);
-        } else {
-            this.addLetter(key, team);
-        }
-    }
-
-    startGame() {
-        // Get team names and words
-        const teamAName = document.getElementById('team-a-name').value.trim() || 'Team 1';
-        const teamBName = document.getElementById('team-b-name').value.trim() || 'Team 2';
-        const teamAWord = document.getElementById('team-a-word').value.toUpperCase();
-        const teamBWord = document.getElementById('team-b-word').value.toUpperCase();
-
-        if (teamAWord.length !== 5 || teamBWord.length !== 5) {
-            alert('Both words must be exactly 5 letters long!');
-            return;
-        }
-
-        // Set team names and words
-        this.teams.a.name = teamAName;
-        this.teams.b.name = teamBName;
-        this.teams.a.word = teamAWord;
-        this.teams.b.word = teamBWord;
-
-        // Update team titles
-        document.getElementById('team-a-title').textContent = teamAName;
-        document.getElementById('team-b-title').textContent = teamBName;
-
-        // Update score labels with team names
-        document.getElementById('team-a-score-label').textContent = teamAName;
-        document.getElementById('team-b-score-label').textContent = teamBName;
-
-        // Reset scores for new game
-        this.scores = { a: 0, b: 0 };
-        this.updateScoreDisplay();
-
-        // Hide setup screen and show game screen
-        document.getElementById('setup-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-        
-        this.gameActive = true;
-    }
-
-    createBoard(teamId) {
-        const board = document.querySelector(`#${teamId} .wordle-board`);
-        for (let i = 0; i < this.ATTEMPTS; i++) {
-            const row = document.createElement('div');
-            row.className = 'row';
-            
-            for (let j = 0; j < this.WORD_LENGTH; j++) {
-                const tile = document.createElement('div');
-                tile.className = 'tile';
-                row.appendChild(tile);
-            }
-            
-            board.appendChild(row);
-        }
-    }
-
-    createKeyboard(keyboardId, team) {
-        const keyboard = document.getElementById(keyboardId);
-        const layout = [
-            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-            ['Enter', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫']
-        ];
-
-        layout.forEach(row => {
-            const keyboardRow = document.createElement('div');
-            keyboardRow.className = 'keyboard-row';
-            
-            row.forEach(key => {
-                const button = document.createElement('button');
-                button.className = 'key';
-                button.textContent = key;
-                // Add data attribute for letter keys
-                if (key.length === 1) {
-                    button.dataset.key = key;
-                }
-                button.addEventListener('click', () => this.handleKeyClick(key, team));
-                keyboardRow.appendChild(button);
-            });
-            
-            keyboard.appendChild(keyboardRow);
-        });
-    }
-
-    addLetter(letter, team) {
-        if (this.teams[team].currentGuess.length < this.WORD_LENGTH) {
-            this.teams[team].currentGuess += letter;
-            this.updateDisplay(team);
-        }
-    }
-
-    deleteLetter(team) {
-        if (this.teams[team].currentGuess.length > 0) {
-            this.teams[team].currentGuess = this.teams[team].currentGuess.slice(0, -1);
-            this.updateDisplay(team);
-        }
-    }
-
-    submitGuess(team) {
-        if (this.teams[team].currentGuess.length !== this.WORD_LENGTH) return;
-
-        const guess = this.teams[team].currentGuess;
-        const word = this.teams[team].word;
-        
-        // Check guess and update colors
-        const result = this.checkGuess(guess, word);
-        this.updateColors(team, result);
-        
-        // Update keyboard colors
-        this.updateKeyboardColors(team, guess, result);
-
-        // Check for win
-        if (guess === word) {
-            this.handleWin(team);
-        }
-
-        // Move to next attempt
-        this.teams[team].currentAttempt++;
-        this.teams[team].currentGuess = '';
-
-        // Check for game over
-        if (this.teams[team].currentAttempt >= this.ATTEMPTS) {
-            this.handleLoss(team);
-        }
-    }
-
-    checkGuess(guess, word) {
-        const result = Array(this.WORD_LENGTH).fill('absent');
-        const wordArray = word.split('');
-        const guessArray = guess.split('');
-
-        // Check for correct letters
-        for (let i = 0; i < this.WORD_LENGTH; i++) {
-            if (guessArray[i] === wordArray[i]) {
-                result[i] = 'correct';
-                wordArray[i] = null;
-            }
-        }
-
-        // Check for present letters
-        for (let i = 0; i < this.WORD_LENGTH; i++) {
-            if (result[i] === 'absent' && wordArray.includes(guessArray[i])) {
-                result[i] = 'present';
-                wordArray[wordArray.indexOf(guessArray[i])] = null;
-            }
-        }
-
-        return result;
-    }
-
-    updateDisplay(team) {
-        const row = document.querySelector(`#team-${team} .wordle-board`).children[this.teams[team].currentAttempt];
-        const tiles = row.children;
-        const guess = this.teams[team].currentGuess.padEnd(this.WORD_LENGTH);
-
-        for (let i = 0; i < this.WORD_LENGTH; i++) {
-            tiles[i].textContent = guess[i];
-        }
-    }
-
-    updateColors(team, result) {
-        const row = document.querySelector(`#team-${team} .wordle-board`).children[this.teams[team].currentAttempt];
-        const tiles = row.children;
-
-        for (let i = 0; i < this.WORD_LENGTH; i++) {
-            tiles[i].classList.add(result[i]);
-        }
-    }
-
-    updateKeyboardColors(team, guess, result) {
-        const keyboard = document.getElementById(`keyboard-${team}`);
-        const guessArray = guess.split('');
-
-        guessArray.forEach((letter, index) => {
-            const key = keyboard.querySelector(`button[data-key="${letter}"]`);
-            if (!key) return;
-
-            const currentState = result[index];
-            const currentClass = this.teams[team].keyboardState[letter];
-
-            // Remove existing color classes
-            key.classList.remove('correct', 'present', 'absent');
-
-            // Determine the best state for the key
-            let newState = currentState;
-            if (currentClass === 'correct' || (currentClass === 'present' && currentState === 'absent')) {
-                newState = currentClass;
-            }
-
-            // Update the key's state
-            key.classList.add(newState);
-            this.teams[team].keyboardState[letter] = newState;
-        });
-    }
-
-    updateScoreDisplay() {
-        const teamAScore = document.getElementById('team-a-score');
-        const teamBScore = document.getElementById('team-b-score');
-        
-        teamAScore.textContent = this.scores.a;
-        teamBScore.textContent = this.scores.b;
-    }
-
-    animateScore(team) {
-        const scoreElement = document.getElementById(`team-${team}-score`);
-        scoreElement.classList.remove('score-update');
-        // Trigger reflow
-        void scoreElement.offsetWidth;
-        scoreElement.classList.add('score-update');
-    }
-
-    handleWin(team) {
-        this.gameActive = false;
-        this.scores[team]++;
-        this.updateScoreDisplay();
-        this.animateScore(team);
-
-        if (this.scores[team] >= this.WINNING_SCORE) {
-            // Game Over - Team wins the match
-            setTimeout(() => {
-                this.handleMatchWin(team);
-            }, 1000);
-        } else {
-            // Continue to next round
-            setTimeout(() => {
-                this.resetBoards();
-                this.gameActive = true;
-            }, 2000);
-        }
-    }
-
-    handleMatchWin(team) {
-        const winner = this.teams[team].name;
-        const modal = document.createElement('div');
-        modal.className = 'win-modal';
-        modal.innerHTML = `
-            <div class="win-modal-content">
-                <h2>${winner} Wins!</h2>
-                <button id="new-match">New Match</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        document.getElementById('new-match').addEventListener('click', () => {
-            this.resetMatch();
-            modal.remove();
-        });
-    }
-
-    resetMatch() {
-        // Reset scores
-        this.scores = { a: 0, b: 0 };
-        this.updateScoreDisplay();
-
-        // Reset boards and show setup screen
-        this.resetBoards();
-    }
-
-    handleLoss(team) {
-        // Give point to the other team
-        const otherTeam = team === 'a' ? 'b' : 'a';
-        this.scores[otherTeam]++;
-        this.updateScoreDisplay();
-        this.animateScore(otherTeam);
-
-        // Reset for next round
-        setTimeout(() => {
-            this.resetBoards();
-            this.gameActive = true;
-        }, 2000);
-    }
-
-    resetBoards() {
-        ['a', 'b'].forEach(team => {
-            // Clear the board
-            const board = document.querySelector(`#team-${team} .wordle-board`);
-            board.innerHTML = '';
-            this.createBoard(`team-${team}`);
-
-            // Reset keyboard
-            const keyboard = document.getElementById(`keyboard-${team}`);
-            keyboard.innerHTML = '';
-            this.createKeyboard(`keyboard-${team}`, team);
-
-            // Reset team state
-            this.teams[team].currentAttempt = 0;
-            this.teams[team].currentGuess = '';
-            this.teams[team].keyboardState = {};
-
-            // Reset keyboard visual state
-            document.getElementById(`keyboard-${team}`).classList.remove('active');
-            document.querySelector(`[data-team="${team}"]`).classList.remove('active');
-        });
-
-        // Reset active team
-        this.activeTeam = null;
-
-        // Show word input modal for next round
-        this.showWordInputModal();
-    }
-
-    showWordInputModal() {
-        const modal = document.createElement('div');
-        modal.className = 'win-modal';
-        modal.innerHTML = `
-            <div class="win-modal-content">
-                <h2>Next Round</h2>
-                <div class="word-inputs">
-                    <div class="team-word-input">
-                        <label>${this.teams.a.name}'s Word:</label>
-                        <input type="password" id="next-word-a" maxlength="5" placeholder="Enter 5-letter word">
-                    </div>
-                    <div class="team-word-input">
-                        <label>${this.teams.b.name}'s Word:</label>
-                        <input type="password" id="next-word-b" maxlength="5" placeholder="Enter 5-letter word">
-                    </div>
-                </div>
-                <button id="start-next-round">Start Round</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        document.getElementById('start-next-round').addEventListener('click', () => {
-            const wordA = document.getElementById('next-word-a').value.toUpperCase();
-            const wordB = document.getElementById('next-word-b').value.toUpperCase();
-
-            if (wordA.length !== 5 || wordB.length !== 5) {
-                alert('Both words must be exactly 5 letters long!');
-                return;
-            }
-
-            this.teams.a.word = wordA;
-            this.teams.b.word = wordB;
-            this.gameActive = true;
-            modal.remove();
-        });
+// Load valid words
+async function loadValidWords() {
+    try {
+        const response = await fetch('words.txt');
+        const text = await response.text();
+        gameState.validWords = text.split('\n').map(word => word.trim().toUpperCase());
+    } catch (error) {
+        console.error('Error loading words:', error);
     }
 }
 
+// Initialize game
+function initializeGame() {
+    // Create empty grids
+    createEmptyGrid(gameElements.team1Grid);
+    createEmptyGrid(gameElements.team2Grid);
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Load valid words
+    loadValidWords();
+}
+
+// Create empty grid
+function createEmptyGrid(gridElement) {
+    gridElement.innerHTML = '';
+    for (let i = 0; i < 6; i++) {
+        const row = document.createElement('div');
+        row.className = 'wordle-row';
+        for (let j = 0; j < 5; j++) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            row.appendChild(tile);
+        }
+        gridElement.appendChild(row);
+    }
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Team names form
+    forms.teamNames.addEventListener('submit', (e) => {
+        e.preventDefault();
+        gameState.team1Name = document.getElementById('team1-name').value;
+        gameState.team2Name = document.getElementById('team2-name').value;
+        
+        // Update all team name displays
+        updateTeamNameDisplays();
+        
+        // Switch to secret words screen
+        screens.welcome.classList.remove('active');
+        screens.secretWords.classList.add('active');
+    });
+
+    // Secret words form
+    forms.secretWords.addEventListener('submit', (e) => {
+        e.preventDefault();
+        gameState.team1Word = document.getElementById('team1-word').value.toUpperCase();
+        gameState.team2Word = document.getElementById('team2-word').value.toUpperCase();
+        
+        // Validate words
+        if (!isValidWord(gameState.team1Word) || !isValidWord(gameState.team2Word)) {
+            alert('Please enter valid 5-letter words from the allowed word list!');
+            return;
+        }
+        
+        // Switch to game screen
+        screens.secretWords.classList.remove('active');
+        screens.game.classList.add('active');
+        
+        // Initialize game controls
+        initializeGameControls();
+    });
+
+    // Setup guess submissions for both teams
+    setupGuessHandling('team1');
+    setupGuessHandling('team2');
+    
+    // Play again
+    gameElements.playAgain.addEventListener('click', resetGame);
+}
+
+// Initialize game controls
+function initializeGameControls() {
+    // Enable both teams' inputs
+    gameElements.team1Guess.disabled = false;
+    gameElements.team2Guess.disabled = false;
+    gameElements.team1Submit.disabled = false;
+    gameElements.team2Submit.disabled = false;
+    
+    // Clear any previous input
+    gameElements.team1Guess.value = '';
+    gameElements.team2Guess.value = '';
+}
+
+// Setup guess handling for a team
+function setupGuessHandling(team) {
+    const guessInput = document.getElementById(`${team}-guess`);
+    const submitButton = document.getElementById(`${team}-submit`);
+
+    // Handle Enter key in input
+    guessInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const remainingGuesses = team === 'team1' ? gameState.team1Guesses : gameState.team2Guesses;
+            if (remainingGuesses > 0 && guessInput.value.length === 5) {
+                handleGuess(team);
+            }
+        }
+    });
+
+    // Handle submit button click
+    submitButton.addEventListener('click', () => {
+        const remainingGuesses = team === 'team1' ? gameState.team1Guesses : gameState.team2Guesses;
+        if (remainingGuesses > 0 && guessInput.value.length === 5) {
+            handleGuess(team);
+        }
+    });
+
+    // Convert input to uppercase as user types and enforce letter-only input
+    guessInput.addEventListener('input', (e) => {
+        // Remove any non-letter characters
+        e.target.value = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase();
+    });
+}
+
+// Update all team name displays
+function updateTeamNameDisplays() {
+    // Update secret words screen labels
+    const team1Labels = document.querySelectorAll('#team1-name-label');
+    const team2Labels = document.querySelectorAll('#team2-name-label');
+    
+    team1Labels.forEach(label => label.textContent = gameState.team1Name);
+    team2Labels.forEach(label => label.textContent = gameState.team2Name);
+    
+    // Update game board titles with just team names
+    gameElements.team1Title.textContent = `${gameState.team1Name}'s Puzzle`;
+    gameElements.team2Title.textContent = `${gameState.team2Name}'s Puzzle`;
+}
+
+// Validate word
+function isValidWord(word) {
+    return word.length === 5 && 
+           /^[A-Za-z]+$/.test(word) && 
+           gameState.validWords.includes(word);
+}
+
+// Handle guess
+function handleGuess(team) {
+    const guessInput = document.getElementById(`${team}-guess`);
+    const guess = guessInput.value.toUpperCase();
+    
+    // Validate guess length and content
+    if (guess.length !== 5) {
+        alert('Please enter a 5-letter word!');
+        return;
+    }
+    
+    // Validate guess is a valid word
+    if (!isValidWord(guess)) {
+        alert('Please enter a valid word from the allowed word list!');
+        return;
+    }
+    
+    // Process guess
+    const secretWord = team === 'team1' ? gameState.team2Word : gameState.team1Word;
+    const grid = gameElements[`${team}Grid`];
+    const currentRow = 6 - (team === 'team1' ? gameState.team1Guesses : gameState.team2Guesses);
+    
+    // Update grid
+    updateGridWithGuess(grid, currentRow, guess, secretWord);
+    
+    // Decrement guesses
+    if (team === 'team1') {
+        gameState.team1Guesses--;
+        gameElements.team1Guesses.textContent = gameState.team1Guesses;
+    } else {
+        gameState.team2Guesses--;
+        gameElements.team2Guesses.textContent = gameState.team2Guesses;
+    }
+    
+    // Check game state
+    if (guess === secretWord) {
+        endGame(team);
+    } else if (gameState.team1Guesses === 0 && gameState.team2Guesses === 0) {
+        endGame('draw');
+    }
+    
+    // Clear input and maintain focus
+    guessInput.value = '';
+    guessInput.focus();
+}
+
+// Update grid with guess
+function updateGridWithGuess(grid, row, guess, secretWord) {
+    const tiles = grid.children[row].children;
+    const letterCounts = {};
+    
+    // Count letters in secret word
+    for (let i = 0; i < secretWord.length; i++) {
+        const letter = secretWord[i];
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+    }
+    
+    // First set the letters
+    for (let i = 0; i < guess.length; i++) {
+        const tile = tiles[i];
+        tile.textContent = guess[i];
+    }
+    
+    // Then animate and reveal colors with delay
+    setTimeout(() => {
+        // First pass: mark correct letters
+        for (let i = 0; i < guess.length; i++) {
+            const letter = guess[i];
+            const tile = tiles[i];
+            
+            setTimeout(() => {
+                tile.classList.add('flip');
+                
+                setTimeout(() => {
+                    if (letter === secretWord[i]) {
+                        tile.classList.add('correct');
+                        letterCounts[letter]--;
+                    }
+                }, 250); // Half of flip animation duration
+            }, i * 250); // Stagger the animations
+        }
+        
+        // Second pass: mark present/absent letters
+        setTimeout(() => {
+            for (let i = 0; i < guess.length; i++) {
+                const letter = guess[i];
+                const tile = tiles[i];
+                
+                if (!tile.classList.contains('correct')) {
+                    if (letterCounts[letter] > 0) {
+                        tile.classList.add('present');
+                        letterCounts[letter]--;
+                    } else {
+                        tile.classList.add('absent');
+                    }
+                }
+            }
+        }, guess.length * 250 + 250); // Wait for all flips to complete
+    }, 100); // Small initial delay
+}
+
+// End game
+function endGame(result) {
+    screens.game.classList.remove('active');
+    screens.endGame.classList.add('active');
+    
+    if (result === 'draw') {
+        gameElements.endGameMessage.textContent = "It's a Draw!";
+    } else {
+        const winningTeam = result === 'team1' ? gameState.team1Name : gameState.team2Name;
+        gameElements.endGameMessage.textContent = `${winningTeam} Wins!`;
+    }
+    
+    // Reveal secret words with team names
+    gameElements.secretWordsReveal.innerHTML = `
+        <p>${gameState.team1Name}'s word: ${gameState.team1Word}</p>
+        <p>${gameState.team2Name}'s word: ${gameState.team2Word}</p>
+    `;
+}
+
+// Reset game
+function resetGame() {
+    // Reset game state
+    gameState.team1Name = '';
+    gameState.team2Name = '';
+    gameState.team1Word = '';
+    gameState.team2Word = '';
+    gameState.team1Guesses = 6;
+    gameState.team2Guesses = 6;
+    
+    // Reset forms
+    forms.teamNames.reset();
+    forms.secretWords.reset();
+    
+    // Reset game elements
+    gameElements.team1Guesses.textContent = '6';
+    gameElements.team2Guesses.textContent = '6';
+    
+    // Reset grids
+    createEmptyGrid(gameElements.team1Grid);
+    createEmptyGrid(gameElements.team2Grid);
+    
+    // Initialize controls
+    initializeGameControls();
+    
+    // Switch to welcome screen
+    screens.endGame.classList.remove('active');
+    screens.welcome.classList.add('active');
+}
+
 // Initialize the game when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    new WordleBattle();
-}); 
+document.addEventListener('DOMContentLoaded', initializeGame); 

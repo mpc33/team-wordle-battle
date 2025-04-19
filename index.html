@@ -3,62 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Wordle Battle</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Wordle Wars</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="setup-screen" class="setup-screen">
-        <div class="setup-container">
-            <div class="team-setup">
-                <div class="team-config">
-                    <input type="text" id="team-a-name" placeholder="Enter Team 1 Name" maxlength="20">
-                    <input type="password" id="team-a-word" placeholder="Enter Team 1's Word" maxlength="5">
+    <div class="container">
+        <!-- Screen 1: Welcome & Team Name Input -->
+        <div id="welcome-screen" class="screen active">
+            <h1>Wordle Wars</h1>
+            <p class="instructions">Welcome to Wordle Wars! Two teams will compete to guess each other's secret words.</p>
+            
+            <form id="team-names-form">
+                <div class="input-group">
+                    <label for="team1-name">Team 1 Name:</label>
+                    <input type="text" id="team1-name" required minlength="1" maxlength="20" placeholder="Enter Team 1 name">
                 </div>
-                <div class="vs">VS</div>
-                <div class="team-config">
-                    <input type="text" id="team-b-name" placeholder="Enter Team 2 Name" maxlength="20">
-                    <input type="password" id="team-b-word" placeholder="Enter Team 2's Word" maxlength="5">
+                
+                <div class="input-group">
+                    <label for="team2-name">Team 2 Name:</label>
+                    <input type="text" id="team2-name" required minlength="1" maxlength="20" placeholder="Enter Team 2 name">
+                </div>
+                
+                <button type="submit" class="btn">Next: Enter Secret Words</button>
+            </form>
+        </div>
+
+        <!-- Screen 2: Secret Word Input -->
+        <div id="secret-words-screen" class="screen">
+            <h2>Host: Enter Secret Words</h2>
+            <p class="instructions">Enter the secret words for each team to guess. Only words from the approved word list are allowed.</p>
+            
+            <form id="secret-words-form">
+                <div class="input-group">
+                    <label for="team1-word">Word for <span id="team2-name-label">Team 2</span> to guess:</label>
+                    <input type="password" 
+                           id="team1-word" 
+                           required 
+                           minlength="5" 
+                           maxlength="5" 
+                           pattern="[A-Za-z]{5}" 
+                           placeholder="Enter 5-letter word"
+                           autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <label for="team2-word">Word for <span id="team1-name-label">Team 1</span> to guess:</label>
+                    <input type="password" 
+                           id="team2-word" 
+                           required 
+                           minlength="5" 
+                           maxlength="5" 
+                           pattern="[A-Za-z]{5}" 
+                           placeholder="Enter 5-letter word"
+                           autocomplete="off">
+                </div>
+                
+                <button type="submit" class="btn">Start Game!</button>
+            </form>
+        </div>
+
+        <!-- Screen 3: Game Board -->
+        <div id="game-screen" class="screen">
+            <div class="game-boards">
+                <div class="team-board" id="team1-board">
+                    <h3 id="team1-title">Team 1's Puzzle</h3>
+                    <div class="guesses-remaining">Guesses Remaining: <span id="team1-guesses">6</span></div>
+                    <div class="wordle-grid" id="team1-grid"></div>
+                    <div class="guess-input-container">
+                        <input type="text" 
+                               id="team1-guess" 
+                               maxlength="5" 
+                               pattern="[A-Za-z]{5}" 
+                               placeholder="Enter guess"
+                               autocomplete="off">
+                        <button type="button" id="team1-submit">Submit</button>
+                    </div>
+                </div>
+                
+                <div class="team-board" id="team2-board">
+                    <h3 id="team2-title">Team 2's Puzzle</h3>
+                    <div class="guesses-remaining">Guesses Remaining: <span id="team2-guesses">6</span></div>
+                    <div class="wordle-grid" id="team2-grid"></div>
+                    <div class="guess-input-container">
+                        <input type="text" 
+                               id="team2-guess" 
+                               maxlength="5" 
+                               pattern="[A-Za-z]{5}" 
+                               placeholder="Enter guess"
+                               autocomplete="off">
+                        <button type="button" id="team2-submit">Submit</button>
+                    </div>
                 </div>
             </div>
-            <button id="start-game" class="start-button">Start Game</button>
+        </div>
+
+        <!-- Screen 4: End Game -->
+        <div id="end-game-screen" class="screen">
+            <h2 id="end-game-message"></h2>
+            <div id="secret-words-reveal"></div>
+            <button id="play-again" class="btn">Play Again</button>
         </div>
     </div>
-
-    <main id="game-screen" class="game-screen hidden">
-        <div class="scoreboard game-scoreboard">
-            <div class="score-item">
-                <span id="team-a-score-label">Team 1</span>
-                <span id="team-a-score">0</span>
-            </div>
-            <div class="score-item">
-                <span id="team-b-score-label">Team 2</span>
-                <span id="team-b-score">0</span>
-            </div>
-        </div>
-        <div class="game-container">
-            <div class="team-section" id="team-a">
-                <h2 id="team-a-title">Team A</h2>
-                <div class="wordle-board">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-                <button class="activate-team" data-team="a">Submit Guess</button>
-                <div class="keyboard" id="keyboard-a"></div>
-            </div>
-
-            <div class="team-section" id="team-b">
-                <h2 id="team-b-title">Team B</h2>
-                <div class="wordle-board">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-                <button class="activate-team" data-team="b">Submit Guess</button>
-                <div class="keyboard" id="keyboard-b"></div>
-            </div>
-        </div>
-    </main>
-
     <script src="script.js"></script>
 </body>
 </html> 
